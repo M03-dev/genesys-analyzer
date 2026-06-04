@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Genesys Cloud – Filanalysator</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/dist/tabler-icons.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ffffff;
+      --bg-secondary: #f6f6f4;
+      --bg-info: #E6F1FB;
+      --bg-danger: #FCEBEB;
+      --bg-success: #EAF3DE;
+      --bg-warning: #FAEEDA;
+      --text: #1a1a18;
+      --text-secondary: #5f5e5a;
+      --text-muted: #888780;
+      --text-info: #0C447C;
+      --text-danger: #791F1F;
+      --text-success: #27500A;
+      --text-warning: #633806;
+      --border: rgba(0,0,0,0.12);
+      --border-med: rgba(0,0,0,0.22);
+      --radius: 8px;
+      --radius-lg: 12px;
+      --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --font-mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1e1e1c;
+        --bg-secondary: #2a2a28;
+        --bg-info: #042C53;
+        --bg-danger: #501313;
+        --bg-success: #173404;
+        --bg-warning: #412402;
+        --text: #f0efe8;
+        --text-secondary: #b4b2a9;
+        --text-muted: #888780;
+        --text-info: #B5D4F4;
+        --text-danger: #F7C1C1;
+        --text-success: #C0DD97;
+        --text-warning: #FAC775;
+        --border: rgba(255,255,255,0.10);
+        --border-med: rgba(255,255,255,0.20);
+      }
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg-secondary);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 2rem;
+    }
+
+    .logo {
+      width: 44px; height: 44px;
+      background: var(--bg-info);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .logo i { font-size: 22px; color: var(--text-info); }
+
+    header h1 {
+      font-size: 20px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    header p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .card {
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+
+    .drop-zone {
+      border: 1.5px dashed var(--border-med);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: background 0.15s;
+      background: var(--bg);
+      margin-bottom: 1rem;
+    }
+
+    .drop-zone.drag-over { background: var(--bg-secondary); }
+
+    .drop-zone .icon {
+      font-size: 32px;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    .drop-zone h2 {
+      font-size: 16px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .drop-zone p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border: 0.5px solid var(--border-med);
+      border-radius: var(--radius);
+      background: transparent;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.12s, transform 0.08s;
+    }
+
+    button:hover { background: var(--bg-secondary); }
+    button:active { transform: scale(0.98); }
+
+    button.primary {
+      background: var(--text);
+      color: var(--bg);
+      border-color: transparent;
+    }
+
+    button.primary:hover { opacity: 0.88; }
+
+    .paste-section { margin-bottom: 1rem; }
+
+    .paste-section label {
+      display: block;
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 90px;
+      resize: vertical;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text);
+      background: var(--bg);
+      border: 0.5px solid var(--border-med);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color 0.12s;
+    }
+
+    textarea:focus { border-color: var(--text-muted); }
+
+    .btn-row { display: flex; gap: 8px; margin-top: 8px; }
+
+    .result-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 1rem 1.25rem;
+      border-bottom: 0.5px solid var(--border);
+      background: var(--bg-secondary);
+    }
+
+    .result-icon {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--bg-info);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .result-icon i { font-size: 18px; color: var(--text-info); }
+
+    .result-header-text h3 { font-size: 15px; font-weight: 500; }
+    .result-header-text p { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+    .field-group { padding: 0 1.25rem 0.5rem; }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 1rem 0 0.4rem;
+    }
+
+    .field-row {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 9px 0;
+      border-bottom: 0.5px solid var(--border);
+    }
+
+    .field-row:last-child { border-bottom: none; }
+
+    .field-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+      min-width: 148px;
+      flex-shrink: 0;
+      padding-top: 1px;
+      display: flex;
+      align-items: flex-start;
+      gap: 5px;
+    }
+
+    .field-label i { font-size: 14px; margin-top: 1px; flex-shrink: 0; }
+
+    .field-value {
+      font-size: 13px;
+      color: var(--text);
+      font-family: var(--font-mono);
+      word-break: break-all;
+    }
+
+    .field-value.sem { font-family: var(--font); }
+
+    .tip {
+      font-size: 12px;
+      color: var(--text-secondary);
+      background: var(--bg-secondary);
+      border-radius: var(--radius);
+      padding: 6px 10px;
+      margin-top: 5px;
+      line-height: 1.5;
+    }
+
+    .tip strong { color: var(--text); font-weight: 500; }
+
+    .badge {
+      display: inline-block;
+      font-size: 12px;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-family: var(--font);
+      font-weight: 500;
+    }
+
+    .badge-blue { background: var(--bg-info); color: var(--text-info); }
+    .badge-amber { background: var(--bg-warning); color: var(--text-warning); }
+    .badge-teal { background: #E1F5EE; color: #085041; }
+    .badge-red { background: var(--bg-danger); color: var(--text-danger); }
+
+    @media (prefers-color-scheme: dark) {
+      .badge-teal { background: #04342C; color: #9FE1CB; }
+    }
+
+    .error-box {
+      background: var(--bg-danger);
+      border: 0.5px solid var(--text-danger);
+      border-radius: var(--radius);
+      padding: 0.75rem 1rem;
+      font-size: 13px;
+      color: var(--text-danger);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 1rem;
+    }
+
+    .url-link {
+      color: var(--text-info);
+      font-family: var(--font);
+      font-size: 13px;
+      word-break: break-all;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .bottom-actions { display: flex; gap: 8px; margin-top: 1rem; }
+
+    footer {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <i class="ti ti-file-export"></i>
+      </div>
+      <div>
+        <h1>Genesys Cloud – Filanalysator</h1>
+        <p>Ladda upp eller klistra in en JSON-fil för att få en tydlig förklaring</p>
+      </div>
+    </header>
+
+    <div class="drop-zone" id="dropZone">
+      <i class="ti ti-file-upload icon"></i>
+      <h2>Dra och släpp en JSON-fil här</h2>
+      <p>eller klicka för att välja fil</p>
+      <input type="file" id="fileInput" accept=".json,application/json" style="display:none;">
+      <button onclick="document.getElementById('fileInput').click()">
+        <i class="ti ti-upload"></i> Välj fil
+      </button>
+    </div>
+
+    <div class="paste-section">
+      <label for="pasteInput">Eller klistra in JSON-innehåll direkt:</label>
+      <textarea id="pasteInput" placeholder='{ "organizationId": "...", "requestType": "GDPR_EXPORT", ... }'></textarea>
+      <div class="btn-row">
+        <button class="primary" onclick="analyzeText()">
+          <i class="ti ti-wand"></i> Analysera
+        </button>
+        <button onclick="clearAll()">
+          <i class="ti ti-x"></i> Rensa
+        </button>
+      </div>
+    </div>
+
+    <div id="output"></div>
+
+    <footer>Genesys Cloud Filanalysator &mdash; intern verktyg</footer>
+  </div>
+
+  <script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const output = document.getElementById('output');
+
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault(); dropZone.classList.remove('drag-over');
+      const f = e.dataTransfer.files[0];
+      if (f) readFile(f);
+    });
+    fileInput.addEventListener('change', () => { if (fileInput.files[0]) readFile(fileInput.files[0]); });
+
+    function readFile(file) {
+      const r = new FileReader();
+      r.onload = e => {
+        document.getElementById('pasteInput').value = e.target.result;
+        analyze(e.target.result, file.name);
+      };
+      r.readAsText(file);
+    }
+
+    function analyzeText() {
+      const t = document.getElementById('pasteInput').value.trim();
+      if (!t) return;
+      analyze(t, 'inklistrat innehåll');
+    }
+
+    function clearAll() {
+      document.getElementById('pasteInput').value = '';
+      output.innerHTML = '';
+    }
+
+    function fmtTs(ms) {
+      if (!ms || isNaN(ms)) return null;
+      return new Date(ms).toLocaleString('sv-SE', {
+        timeZone: 'Europe/Stockholm',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      });
+    }
+
+    function badge(text, type) {
+      return `<span class="badge badge-${type}">${text}</span>`;
+    }
+
+    function requestTypeBadge(t) {
+      const map = {
+        GDPR_EXPORT: ['GDPR Export', 'amber'],
+        GDPR_DELETE: ['GDPR Radering', 'red'],
+        GDPR_ERASURE: ['GDPR Radering', 'red']
+      };
+      const m = map[t] || [t, 'blue'];
+      return badge(m[0], m[1]);
+    }
+
+    function topicBadge(t) {
+      if (!t) return '';
+      const tl = t.toLowerCase();
+      if (tl.includes('call')) return badge(t, 'teal');
+      if (tl.includes('chat')) return badge(t, 'blue');
+      return badge(t, 'blue');
+    }
+
+    function topicDescription(topic) {
+      if (!topic) return '';
+      const t = topic.toLowerCase();
+      if (t.includes('call')) return 'En telefonsamtalshändelse har skickats in till GDPR-exportkön.';
+      if (t.includes('chat')) return 'En chatthändelse har skickats in till GDPR-exportkön.';
+      if (t.includes('email')) return 'En e-posthändelse har skickats in till GDPR-exportkön.';
+      if (t.includes('message')) return 'En meddelandehändelse har skickats in till GDPR-exportkön.';
+      return 'Händelsetyp från Genesys Cloud.';
+    }
+
+    function field(label, icon, value, tip, mono) {
+      return `<div class="field-row">
+        <span class="field-label"><i class="ti ti-${icon}"></i>${label}</span>
+        <div>
+          <span class="field-value${mono === false ? ' sem' : ''}">${value}</span>
+          ${tip ? `<div class="tip">${tip}</div>` : ''}
+        </div>
+      </div>`;
+    }
+
+    const KNOWN_KEYS = ['organizationId','requestType','requestId','externalId','correlationId','topic','fullName','eventTimestamp','timestamp','acknowledgementUrl','secondaryIds'];
+
+    function analyze(text, filename) {
+      let data;
+      try { data = JSON.parse(text); } catch(e) {
+        output.innerHTML = `<div class="error-box"><i class="ti ti-alert-circle"></i>Ogiltig JSON – kontrollera att filen inte är skadad eller trunkerad.</div>`;
+        return;
+      }
+
+      const eventTs = fmtTs(data.eventTimestamp);
+      const procTs = fmtTs(data.timestamp);
+
+      let title = 'Genesys Cloud-händelse';
+      if (data.requestType === 'GDPR_EXPORT') title = 'GDPR-exportbegäran';
+      else if (data.requestType === 'GDPR_DELETE' || data.requestType === 'GDPR_ERASURE') title = 'GDPR-raderingsbegäran';
+      else if (data.topic) title = data.topic;
+
+      let html = `<div class="card">
+        <div class="result-header">
+          <div class="result-icon"><i class="ti ti-file-description"></i></div>
+          <div class="result-header-text">
+            <h3>${title}</h3>
+            <p>${filename}</p>
+          </div>
+        </div>
+        <div class="field-group">`;
+
+      if (data.organizationId || data.requestId || data.externalId || data.correlationId) {
+        html += `<p class="section-label">Identifiering</p>`;
+        if (data.organizationId) html += field('Organisations-ID', 'building', data.organizationId, 'Din unika Genesys Cloud-organisation. Identifierar er som kund.');
+        if (data.requestId) html += field('Begäran-ID', 'fingerprint', data.requestId, '<strong>Spara detta!</strong> Används för att följa upp och spåra ärendet hos Genesys.');
+        if (data.externalId) html += field('Externt ID', 'id-badge', data.externalId, 'Ert eget interna referensnummer, t.ex. från ert CRM eller ärendesystem.');
+        if (data.correlationId) html += field('Korrelations-ID', 'link', data.correlationId, 'Kopplar samman relaterade händelser i loggar. Används vid felsökning.');
+      }
+
+      if (data.requestType || data.topic || data.fullName) {
+        html += `<p class="section-label">Händelsetyp</p>`;
+        if (data.requestType) html += field('Ärendetyp', 'shield-check', requestTypeBadge(data.requestType), data.requestType === 'GDPR_EXPORT' ? 'En begäran om dataexport enligt GDPR (t.ex. rätten till dataportabilitet, Art. 20).' : 'En begäran om radering av personuppgifter enligt GDPR (Art. 17).', false);
+        if (data.topic) html += field('Ämne (topic)', 'tag', topicBadge(data.topic), topicDescription(data.topic), false);
+        if (data.fullName) html += field('Händelseklass', 'code', `<span style="font-size:12px;">${data.fullName}</span>`, 'Den tekniska Java-klassen som genererat händelsen. Intern Genesys-referens.');
+      }
+
+      if (eventTs || procTs) {
+        html += `<p class="section-label">Tidpunkter</p>`;
+        if (eventTs) html += field('Händelsetid', 'clock', eventTs, 'När samtalet eller händelsen faktiskt inträffade.', false);
+        if (procTs) html += field('Bearbetningstid', 'clock-check', procTs, 'När Genesys tog emot och behandlade händelsen. Kan skilja sig från händelsetiden.', false);
+      }
+
+      if (data.secondaryIds && Object.keys(data.secondaryIds).length > 0) {
+        html += `<p class="section-label">Sekundära ID:n</p>`;
+        for (const [k, v] of Object.entries(data.secondaryIds)) {
+          html += field(k, 'hash', v, '');
+        }
+      }
+
+      const unknownKeys = Object.keys(data).filter(k => !KNOWN_KEYS.includes(k));
+      if (unknownKeys.length > 0) {
+        html += `<p class="section-label">Övriga fält</p>`;
+        for (const k of unknownKeys) {
+          const v = typeof data[k] === 'object' ? JSON.stringify(data[k]) : String(data[k]);
+          html += field(k, 'dots', v, '');
+        }
+      }
+
+      if (data.acknowledgementUrl) {
+        html += `<p class="section-label">Datahämtning</p>
+        <div class="field-row">
+          <span class="field-label"><i class="ti ti-cloud-download"></i>Nedladdningslänk</span>
+          <div>
+            <a href="${data.acknowledgementUrl}" class="url-link" target="_blank" rel="noopener">
+              <i class="ti ti-external-link"></i> Öppna S3-länk
+            </a>
+            <div class="tip"><strong>Viktigt:</strong> Hämta exportdatan från denna AWS S3-länk (eu-central-1) snarast – länken är tidsbegränsad.</div>
+          </div>
+        </div>`;
+      }
+
+      html += `</div></div>`;
+      html += `<div class="bottom-actions">
+        <button onclick="clearAll()"><i class="ti ti-refresh"></i> Analysera ny fil</button>
+      </div>`;
+
+      output.innerHTML = html;
+      output.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  </script>
+</body>
+</html>
