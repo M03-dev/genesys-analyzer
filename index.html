@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Genesys Cloud – Filanalysator</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/dist/tabler-icons.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #ffffff; --bg-sec: #f6f6f4; --bg-info: #E6F1FB; --bg-danger: #FCEBEB;
+      --bg-success: #EAF3DE; --bg-warn: #FAEEDA; --bg-teal: #E1F5EE;
+      --text: #1a1a18; --text-sec: #5f5e5a; --text-muted: #888780;
+      --text-info: #0C447C; --text-danger: #791F1F; --text-success: #27500A;
+      --text-warn: #633806; --text-teal: #085041;
+      --border: rgba(0,0,0,0.12); --border-med: rgba(0,0,0,0.22);
+      --radius: 8px; --radius-lg: 12px;
+      --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --mono: 'Cascadia Code','Fira Code','Consolas',monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg:#1e1e1c; --bg-sec:#2a2a28; --bg-info:#042C53; --bg-danger:#501313;
+        --bg-success:#173404; --bg-warn:#412402; --bg-teal:#04342C;
+        --text:#f0efe8; --text-sec:#b4b2a9; --text-muted:#888780;
+        --text-info:#B5D4F4; --text-danger:#F7C1C1; --text-success:#C0DD97;
+        --text-warn:#FAC775; --text-teal:#9FE1CB;
+        --border:rgba(255,255,255,0.10); --border-med:rgba(255,255,255,0.20);
+      }
+    }
+    body { font-family:var(--font); background:var(--bg-sec); color:var(--text); min-height:100vh; padding:2rem 1rem; }
+    .container { max-width:760px; margin:0 auto; }
+    header { display:flex; align-items:center; gap:14px; margin-bottom:2rem; }
+    .logo { width:44px;height:44px;background:var(--bg-info);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+    .logo i { font-size:22px;color:var(--text-info); }
+    header h1 { font-size:20px;font-weight:500; }
+    header p { font-size:13px;color:var(--text-sec);margin-top:2px; }
+    .drop-zone { border:1.5px dashed var(--border-med);border-radius:var(--radius-lg);padding:2rem 1.5rem;text-align:center;cursor:pointer;transition:background .15s;background:var(--bg);margin-bottom:1rem; }
+    .drop-zone.drag-over { background:var(--bg-sec); }
+    .drop-zone .icon { font-size:30px;color:var(--text-muted);display:block;margin-bottom:8px; }
+    .drop-zone h2 { font-size:15px;font-weight:500;margin-bottom:4px; }
+    .drop-zone p { font-size:13px;color:var(--text-sec);margin-bottom:14px; }
+    .paste-section label { display:block;font-size:13px;color:var(--text-sec);margin-bottom:6px; }
+    textarea { width:100%;min-height:80px;resize:vertical;font-family:var(--mono);font-size:12px;color:var(--text);background:var(--bg);border:0.5px solid var(--border-med);border-radius:var(--radius);padding:10px 12px;outline:none;transition:border-color .12s; }
+    textarea:focus { border-color:var(--text-muted); }
+    .btn-row { display:flex;gap:8px;margin-top:8px;flex-wrap:wrap; }
+    button { display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:0.5px solid var(--border-med);border-radius:var(--radius);background:transparent;color:var(--text);font-family:var(--font);font-size:13px;cursor:pointer;transition:background .12s,transform .08s; }
+    button:hover { background:var(--bg-sec); }
+    button:active { transform:scale(0.98); }
+    button.primary { background:var(--text);color:var(--bg);border-color:transparent; }
+    button.primary:hover { opacity:.88; }
+    /* Cards */
+    .result-set { display:flex;flex-direction:column;gap:1rem;margin-top:1rem; }
+    .card { background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden; }
+    .card-header { display:flex;align-items:center;gap:12px;padding:.875rem 1.25rem;border-bottom:0.5px solid var(--border);background:var(--bg-sec); }
+    .card-icon { width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+    .card-header-text h3 { font-size:14px;font-weight:500; }
+    .card-header-text p { font-size:12px;color:var(--text-sec);margin-top:2px; }
+    .field-group { padding:0 1.25rem .5rem; }
+    .section-label { font-size:11px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;padding:1rem 0 .4rem; }
+    .field-row { display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border); }
+    .field-row:last-child { border-bottom:none; }
+    .field-label { font-size:13px;color:var(--text-sec);min-width:152px;flex-shrink:0;padding-top:1px;display:flex;align-items:flex-start;gap:5px; }
+    .field-label i { font-size:14px;margin-top:1px;flex-shrink:0; }
+    .fv { font-size:13px;color:var(--text);font-family:var(--mono);word-break:break-all; }
+    .fv.sem { font-family:var(--font); }
+    .tip { font-size:12px;color:var(--text-sec);background:var(--bg-sec);border-radius:var(--radius);padding:6px 10px;margin-top:5px;line-height:1.5; }
+    .tip strong { color:var(--text);font-weight:500; }
+    .badge { display:inline-block;font-size:12px;padding:2px 10px;border-radius:20px;font-family:var(--font);font-weight:500; }
+    .b-blue { background:var(--bg-info);color:var(--text-info); }
+    .b-amber { background:var(--bg-warn);color:var(--text-warn); }
+    .b-red { background:var(--bg-danger);color:var(--text-danger); }
+    .b-green { background:var(--bg-success);color:var(--text-success); }
+    .b-teal { background:var(--bg-teal);color:var(--text-teal); }
+    .b-gray { background:var(--bg-sec);color:var(--text-sec);border:0.5px solid var(--border-med); }
+    .tag-list { display:flex;flex-wrap:wrap;gap:5px;margin-top:4px; }
+    /* Table for CSV */
+    .table-wrap { overflow-x:auto;padding:0 1.25rem 1.25rem; }
+    table { width:100%;border-collapse:collapse;font-size:12px; }
+    th { font-size:11px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;padding:8px 10px;border-bottom:0.5px solid var(--border);text-align:left;white-space:nowrap; }
+    td { padding:8px 10px;border-bottom:0.5px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;white-space:nowrap; }
+    tr:last-child td { border-bottom:none; }
+    tr:hover td { background:var(--bg-sec); }
+    .cost-total { font-weight:500;color:var(--text-warn); }
+    /* Summary bar */
+    .summary-bar { display:flex;flex-wrap:wrap;gap:12px;padding:1rem 1.25rem;border-bottom:0.5px solid var(--border); }
+    .stat { display:flex;flex-direction:column;gap:2px; }
+    .stat-val { font-size:18px;font-weight:500; }
+    .stat-lbl { font-size:11px;color:var(--text-muted); }
+    /* Error */
+    .error-box { background:var(--bg-danger);border:0.5px solid var(--text-danger);border-radius:var(--radius);padding:.75rem 1rem;font-size:13px;color:var(--text-danger);display:flex;align-items:center;gap:8px;margin-top:1rem; }
+    .empty-box { background:var(--bg-sec);border:0.5px solid var(--border);border-radius:var(--radius);padding:1rem;font-size:13px;color:var(--text-sec);margin-top:1rem; }
+    .url-link { color:var(--text-info);font-family:var(--font);font-size:13px;word-break:break-all; }
+    .bottom-actions { display:flex;gap:8px;margin-top:1rem; }
+    footer { text-align:center;font-size:12px;color:var(--text-muted);margin-top:2.5rem; }
+    .file-tabs { display:flex;flex-wrap:wrap;gap:6px;margin-bottom:.75rem; }
+    .file-tab { font-size:12px;padding:4px 10px;border-radius:20px;border:0.5px solid var(--border-med);background:var(--bg);cursor:pointer;color:var(--text-sec); }
+    .file-tab.active { background:var(--text);color:var(--bg);border-color:transparent; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo"><i class="ti ti-file-export"></i></div>
+    <div>
+      <h1>Genesys Cloud – Filanalysator</h1>
+      <p>Ladda upp en eller flera filer för att få en tydlig förklaring på svenska</p>
+    </div>
+  </header>
+
+  <div class="drop-zone" id="dropZone">
+    <i class="ti ti-files icon"></i>
+    <h2>Dra och släpp filer här</h2>
+    <p>JSON, CSV eller Genesys-exportfiler – flera filer stöds</p>
+    <input type="file" id="fileInput" multiple style="display:none;">
+    <button onclick="document.getElementById('fileInput').click()">
+      <i class="ti ti-upload"></i> Välj fil(er)
+    </button>
+  </div>
+
+  <div class="paste-section">
+    <label for="pasteInput">Eller klistra in innehåll (JSON eller CSV):</label>
+    <textarea id="pasteInput" placeholder='Klistra in JSON eller CSV-innehåll här...'></textarea>
+    <div class="btn-row">
+      <button class="primary" onclick="analyzeText()"><i class="ti ti-wand"></i> Analysera</button>
+      <button onclick="clearAll()"><i class="ti ti-x"></i> Rensa allt</button>
+    </div>
+  </div>
+
+  <div id="output"></div>
+
+  <footer>Genesys Cloud Filanalysator &mdash; internt verktyg</footer>
+</div>
+
+<script>
+// ── Drag & drop ──────────────────────────────────────────────
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const output   = document.getElementById('output');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  handleFiles(Array.from(e.dataTransfer.files));
+});
+fileInput.addEventListener('change', () => handleFiles(Array.from(fileInput.files)));
+
+function handleFiles(files) {
+  if (!files.length) return;
+  let pending = files.length, results = [];
+  files.forEach((file, i) => {
+    const r = new FileReader();
+    r.onload = e => {
+      results[i] = { name: file.name, text: e.target.result };
+      if (--pending === 0) renderAll(results.filter(Boolean));
+    };
+    r.readAsText(file);
+  });
+}
+
+function analyzeText() {
+  const t = document.getElementById('pasteInput').value.trim();
+  if (!t) return;
+  renderAll([{ name: 'inklistrat innehåll', text: t }]);
+}
+
+function clearAll() {
+  document.getElementById('pasteInput').value = '';
+  output.innerHTML = '';
+}
+
+// ── Render multiple files ────────────────────────────────────
+function renderAll(files) {
+  if (files.length === 1) {
+    output.innerHTML = renderFile(files[0].name, files[0].text);
+  } else {
+    // Tabs
+    const tabs = files.map((f,i) => `<button class="file-tab${i===0?' active':''}" onclick="switchTab(${i})">${shortName(f.name)}</button>`).join('');
+    const panels = files.map((f,i) => `<div class="tab-panel" id="panel-${i}" style="display:${i===0?'block':'none'}">${renderFile(f.name, f.text)}</div>`).join('');
+    output.innerHTML = `<div class="file-tabs">${tabs}</div>${panels}`;
+  }
+  output.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function switchTab(idx) {
+  document.querySelectorAll('.file-tab').forEach((t,i) => t.classList.toggle('active', i===idx));
+  document.querySelectorAll('.tab-panel').forEach((p,i) => p.style.display = i===idx ? 'block' : 'none');
+}
+
+function shortName(n) {
+  return n.length > 30 ? n.slice(0,27)+'…' : n;
+}
+
+// ── Detect & render single file ──────────────────────────────
+function renderFile(name, text) {
+  const trimmed = text.trim();
+
+  // CSV detection
+  if (trimmed.startsWith('"SIP Call Id"') || trimmed.startsWith('SIP Call Id')) {
+    return renderCSVReport(name, trimmed);
+  }
+
+  // JSON
+  let data;
+  try { data = JSON.parse(trimmed); } catch(e) {
+    return `<div class="error-box"><i class="ti ti-alert-circle"></i>Ogiltig fil – kan inte tolka som JSON eller CSV.</div>`;
+  }
+
+  // Empty array
+  if (Array.isArray(data) && data.length === 0) {
+    return renderEmptyConfig(name);
+  }
+
+  // Billing service
+  if (Array.isArray(data) && data[0]?.source) {
+    return renderBilling(name, data);
+  }
+
+  // Journey session
+  if (data.type === 'conversation' || data.sortKey === 'session' || data.channels) {
+    return renderJourneySession(name, data);
+  }
+
+  // GDPR event
+  if (data.requestType || data.topic || data.organizationId) {
+    return renderGdprEvent(name, data);
+  }
+
+  // Generic fallback
+  return renderGeneric(name, data);
+}
+
+// ── Helpers ──────────────────────────────────────────────────
+function fmtTs(ms) {
+  if (!ms || isNaN(ms)) return null;
+  return new Date(ms).toLocaleString('sv-SE', { timeZone:'Europe/Stockholm', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+function fmtDur(sec) {
+  if (!sec) return '–';
+  const m = Math.floor(sec/60), s = sec%60;
+  return m > 0 ? `${m} min ${s} sek` : `${s} sek`;
+}
+function badge(txt, cls) { return `<span class="badge ${cls}">${txt}</span>`; }
+function field(label, icon, valueHtml, tip, mono=true) {
+  return `<div class="field-row">
+    <span class="field-label"><i class="ti ti-${icon}"></i>${label}</span>
+    <div>
+      <span class="fv${mono?'':' sem'}">${valueHtml}</span>
+      ${tip ? `<div class="tip">${tip}</div>` : ''}
+    </div>
+  </div>`;
+}
+function cardWrap(iconClass, iconBg, iconColor, title, subtitle, body) {
+  return `<div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background:${iconBg}"><i class="ti ti-${iconClass}" style="font-size:18px;color:${iconColor}"></i></div>
+      <div class="card-header-text"><h3>${title}</h3><p>${subtitle}</p></div>
+    </div>
+    ${body}
+  </div>`;
+}
+
+// ── Renderer: GDPR event ─────────────────────────────────────
+function renderGdprEvent(name, d) {
+  const typeMap = { GDPR_EXPORT:['GDPR Export','b-amber'], GDPR_DELETE:['GDPR Radering','b-red'], GDPR_ERASURE:['GDPR Radering','b-red'] };
+  const [typeLabel, typeCls] = typeMap[d.requestType] || [d.requestType||'Okänd','b-gray'];
+  let title = d.requestType === 'GDPR_EXPORT' ? 'GDPR-exportbegäran' : d.requestType ? 'GDPR-händelse' : d.topic || 'Genesys-händelse';
+
+  let body = `<div class="field-group">
+    <p class="section-label">Identifiering</p>`;
+  if (d.organizationId) body += field('Organisations-ID','building',d.organizationId,'Din unika Genesys Cloud-organisation.');
+  if (d.requestId)      body += field('Begäran-ID','fingerprint',d.requestId,'<strong>Spara detta!</strong> Används för att följa upp ärendet.');
+  if (d.externalId)     body += field('Externt ID','id-badge',d.externalId,'Ert eget interna referensnummer, t.ex. ärendenummer i CRM.');
+  if (d.correlationId)  body += field('Korrelations-ID','link',d.correlationId,'Kopplar samman relaterade händelser i loggar. Används vid felsökning.');
+  if (d.requestType || d.topic) {
+    body += `<p class="section-label">Händelsetyp</p>`;
+    if (d.requestType) body += field('Ärendetyp','shield-check',badge(typeLabel,typeCls),'GDPR-begäranstyp.',false);
+    if (d.topic)       body += field('Ämne','tag',badge(d.topic,'b-teal'),'',false);
+    if (d.fullName)    body += field('Händelseklass','code',`<span style="font-size:12px">${d.fullName}</span>`,'Intern Genesys Java-klass.');
+  }
+  const et = fmtTs(d.eventTimestamp), pt = fmtTs(d.timestamp);
+  if (et || pt) {
+    body += `<p class="section-label">Tidpunkter</p>`;
+    if (et) body += field('Händelsetid','clock',et,'När händelsen inträffade.',false);
+    if (pt) body += field('Bearbetningstid','clock-check',pt,'När Genesys behandlade händelsen.',false);
+  }
+  if (d.acknowledgementUrl) {
+    body += `<p class="section-label">Datahämtning</p>
+    <div class="field-row">
+      <span class="field-label"><i class="ti ti-cloud-download"></i>S3-länk</span>
+      <div><a href="${d.acknowledgementUrl}" class="url-link" target="_blank" rel="noopener"><i class="ti ti-external-link"></i> Öppna exportdata</a>
+      <div class="tip"><strong>Viktigt:</strong> Länken är tidsbegränsad – hämta exportdatan snarast.</div></div>
+    </div>`;
+  }
+  body += `</div>`;
+  return cardWrap('file-export','var(--bg-info)','var(--text-info)',title,name,body);
+}
+
+// ── Renderer: Journey session ────────────────────────────────
+function renderJourneySession(name, d) {
+  const created = fmtTs(d.createdDate);
+  const ended   = fmtTs(d.endedDate);
+  const lastEvt = d.lastEvent ? fmtTs(d.lastEvent.createdDate) : null;
+
+  const outcomeMap = { Answered: badge('Besvarad','b-green'), Abandoned: badge('Övergiven','b-red'), Transferred: badge('Vidarekopplad','b-blue') };
+  const acdBadge = outcomeMap[d.lastAcdOutcome] || badge(d.lastAcdOutcome||'–','b-gray');
+
+  const wrapupCode = d.lastUserWrapup?.code;
+  const wrapupBadge = wrapupCode === 'ININ-WRAP-UP-TIMEOUT' ? badge('Timeout (ej avslutad manuellt)','b-amber') : wrapupCode ? badge(wrapupCode,'b-gray') : '–';
+
+  let body = `<div class="summary-bar">
+    <div class="stat"><span class="stat-val">${fmtDur(d.durationInSeconds)}</span><span class="stat-lbl">Samtalslängd</span></div>
+    <div class="stat"><span class="stat-val">${d.eventCount||0}</span><span class="stat-lbl">Händelser</span></div>
+    <div class="stat"><span class="stat-val">${acdBadge}</span><span class="stat-lbl">Utfall</span></div>
+  </div>
+  <div class="field-group">
+    <p class="section-label">Konversation</p>`;
+  body += field('Konversations-ID','message-circle',d.id,'Unikt ID för denna konversation/detta samtal.');
+  body += field('Externt kontakt-ID','user',d.externalContactId||'–','Kopplar samtalet till en specifik kontakt i Genesys.');
+  body += field('Riktning','arrow-right',badge(d.originatingDirection==='Inbound'?'Inkommande':'Utgående', d.originatingDirection==='Inbound'?'b-teal':'b-blue'),'',false);
+  body += field('Kanaler','device-mobile',`<div class="tag-list">${(d.channels||[]).map(c => badge(c,'b-gray')).join('')}</div>`,'Vilka kanaler som användes (t.ex. röst, botflow).',false);
+
+  body += `<p class="section-label">Tidpunkter</p>`;
+  if (created) body += field('Skapad','calendar',created,'När samtalet startade.',false);
+  if (ended)   body += field('Avslutad','calendar-check',ended,'När samtalet avslutades.',false);
+  if (lastEvt) body += field('Sista händelse','clock',`${d.lastEvent.name} – ${lastEvt}`,'Den sista registrerade händelsen i samtalet.',false);
+
+  body += `<p class="section-label">Handläggning</p>`;
+  body += field('Kö','list',d.lastConnectedQueue||'–','ID för den kö samtalet kopplades till.');
+  body += field('Handläggare','user-check',d.lastConnectedUser||'–','ID för den agent som hanterade samtalet.');
+  body += field('Avslutningskod (wrap-up)',d.lastUserWrapup?.code==='ININ-WRAP-UP-TIMEOUT'?'alert-circle':'check',wrapupBadge, d.lastUserWrapup?.code==='ININ-WRAP-UP-TIMEOUT'?'<strong>OBS:</strong> Agenten avslutade inte manuellt – wrap-up-timeout löpte ut.':'',false);
+  body += field('Frånkopplingstyp','plug-off',badge(d.lastUserDisconnectType||'–','b-gray'),'Vem som lade på.',false);
+
+  body += `<p class="section-label">Övrigt</p>`;
+  body += field('Organisations-ID','building',d.organizationId||'–','');
+  const exp = fmtTs(d.exp * 1000);
+  if (exp) body += field('Datats giltighetstid','hourglass',exp,'<strong>GDPR:</strong> Journeydata raderas automatiskt efter detta datum.',false);
+  body += `</div>`;
+
+  return cardWrap('route','var(--bg-teal)','var(--text-teal)','Journey-session – konversationsdata',name,body);
+}
+
+// ── Renderer: CSV billing/PCV report ────────────────────────
+function renderCSVReport(name, text) {
+  const lines = text.trim().split('\n').map(l => l.split(',').map(v => v.replace(/^"|"$/g,'').trim()));
+  const headers = lines[0];
+  const rows    = lines.slice(1).filter(r => r.length > 1);
+
+  // Swedish header translations
+  const hdrMap = {
+    'SIP Call Id':'SIP Call-ID','Origin':'Uppringare','Destination':'Mottagare',
+    'Usage Group':'Grupp','Usage Group Display':'Grupp (visning)','Call Type':'Samtalstyp',
+    'Direction':'Riktning','Start Time':'Starttid','End Time':'Sluttid',
+    'Duration (seconds)':'Varaktighet (sek)','Adjusted duration (seconds)':'Justerad varaktighet (sek)',
+    'Adjusted duration (minutes)':'Justerad varaktighet (min)','Usage Rate Per Minute':'Taxa/min',
+    'Listed Usage Rate Per Minute':'Listad taxa/min','Total cost':'Totalkostnad',
+    'Currency':'Valuta','Rate Sheet':'Taxeblad','Postal Code':'Postnummer','Conversation Id':'Konversations-ID'
+  };
+
+  const dirIdx     = headers.indexOf('Direction');
+  const costIdx    = headers.indexOf('Total cost');
+  const currIdx    = headers.indexOf('Currency');
+  const durIdx     = headers.indexOf('Duration (seconds)');
+  const startIdx   = headers.indexOf('Start Time');
+
+  // Summary stats
+  const totalCost = rows.reduce((s,r) => s + (parseFloat(r[costIdx])||0), 0);
+  const totalDur  = rows.reduce((s,r) => s + (parseInt(r[durIdx])||0), 0);
+  const currency  = rows[0]?.[currIdx] || '';
+
+  let body = `<div class="summary-bar">
+    <div class="stat"><span class="stat-val">${rows.length}</span><span class="stat-lbl">Samtal</span></div>
+    <div class="stat"><span class="stat-val">${fmtDur(totalDur)}</span><span class="stat-lbl">Total samtalstid</span></div>
+    <div class="stat"><span class="stat-val" style="color:var(--text-warn)">${totalCost.toFixed(4)} ${currency}</span><span class="stat-lbl">Total kostnad</span></div>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr>${headers.map(h=>`<th>${hdrMap[h]||h}</th>`).join('')}</tr></thead>
+    <tbody>`;
+
+  rows.forEach(row => {
+    body += '<tr>' + row.map((v,i) => {
+      if (i === dirIdx) return `<td>${badge(v==='INBOUND'?'Inkommande':'Utgående', v==='INBOUND'?'b-teal':'b-blue')}</td>`;
+      if (i === costIdx) return `<td class="cost-total">${v} ${currency}</td>`;
+      if (i === startIdx && v) return `<td>${v.replace('T',' ').replace('.000Z','')}</td>`;
+      return `<td>${v||'–'}</td>`;
+    }).join('') + '</tr>';
+  });
+
+  body += `</tbody></table></div>`;
+  return cardWrap('report-money','var(--bg-warn)','var(--text-warn)','Samtalsrapport – faktureringsdata',name,body);
+}
+
+// ── Renderer: Billing service ────────────────────────────────
+function renderBilling(name, data) {
+  let body = `<div class="field-group">`;
+  data.forEach(section => {
+    body += `<p class="section-label">${section.source}</p>`;
+    if (section.notes) body += `<div class="field-row"><span class="field-label"><i class="ti ti-info-circle"></i>Notering</span><div><span class="fv sem">${section.notes}</span><div class="tip">Dessa fakturor kan innehålla personuppgifter (PII) och kan behöva exporteras som en del av en GDPR-begäran.</div></div></div>`;
+    body += `<div class="field-row"><span class="field-label"><i class="ti ti-receipt"></i>Faktura-ID:n</span><div><div class="tag-list">${(section.data||[]).map(d=>badge(d.id,'b-gray')).join('')}</div><div class="tip">${section.data?.length||0} faktura(r) registrerade för denna kontakt.</div></div></div>`;
+  });
+  body += `</div>`;
+  return cardWrap('receipt','var(--bg-success)','var(--text-success)','Faktureringsdata',name,body);
+}
+
+// ── Renderer: Empty config ────────────────────────────────────
+function renderEmptyConfig(name) {
+  let label = 'Tom konfiguration';
+  let tip   = 'Filen innehåller en tom lista – inga poster är konfigurerade.';
+  if (name.includes('callForwarding')) {
+    label = 'Vidarekoppling – inga regler';
+    tip   = 'Den här användaren har inga regler för samtalvidarekoppling (callForwarding) konfigurerade i Genesys Edge.';
+  }
+  return `<div class="card"><div class="card-header"><div class="card-icon" style="background:var(--bg-sec)"><i class="ti ti-list" style="font-size:18px;color:var(--text-muted)"></i></div><div class="card-header-text"><h3>${label}</h3><p>${name}</p></div></div><div class="field-group"><div class="field-row"><span class="field-label"><i class="ti ti-info-circle"></i>Status</span><div><span class="fv sem">${badge('Tom lista','b-gray')}</span><div class="tip">${tip}</div></div></div></div></div>`;
+}
+
+// ── Renderer: Generic fallback ────────────────────────────────
+function renderGeneric(name, data) {
+  let body = `<div class="field-group"><p class="section-label">Fältöversikt</p>`;
+  for (const [k,v] of Object.entries(data)) {
+    const val = typeof v === 'object' ? JSON.stringify(v) : String(v);
+    body += field(k,'dots',val,'');
+  }
+  body += `</div>`;
+  return cardWrap('file','var(--bg-sec)','var(--text-muted)','Okänd filtyp',name,body);
+}
+</script>
+</body>
+</html>
